@@ -6,13 +6,16 @@ from django.utils import timezone
 from datetime import timedelta
 from reddit.models import (
     Keyword, Subreddit, RedditPost, Classification, Reply, 
-    Notification, AIPersona, PerformanceMetrics, SystemConfig
+    Notification, AIPersona, PerformanceMetrics, SystemConfig, Leaderboard
 )
+from langagent.models import AILearningData, AIPromptTemplate, AIPerformanceMetrics
 from .serializers import (
     KeywordSerializer, SubredditSerializer, RedditPostSerializer,
     ClassificationSerializer, ReplySerializer, NotificationSerializer,
     AIPersonaSerializer, PerformanceMetricsSerializer,
-    DashboardStatsSerializer, LeadSummarySerializer, SystemConfigSerializer
+    DashboardStatsSerializer, LeadSummarySerializer, SystemConfigSerializer,
+    LeaderboardSerializer, AILearningDataSerializer, AIPromptTemplateSerializer,
+    AIPerformanceMetricsSerializer
 )
 from django.shortcuts import get_object_or_404
 
@@ -267,3 +270,48 @@ class SystemConfigViewSet(viewsets.ModelViewSet):
     def get_object(self):
         key = self.kwargs.get('key')
         return get_object_or_404(SystemConfig, key=key)
+
+
+class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Leaderboard.objects.all()
+    serializer_class = LeaderboardSerializer
+    permission_classes = [permissions.AllowAny]
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        metric_type = self.request.query_params.get('metric_type')
+        if metric_type:
+            queryset = queryset.filter(metric_type=metric_type)
+        return queryset.order_by('-last_updated')
+
+
+class AIPerformanceMetricsViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = AIPerformanceMetrics.objects.all()
+    serializer_class = AIPerformanceMetricsSerializer
+    permission_classes = [permissions.AllowAny]
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        days = self.request.query_params.get('days', 30)
+        if days:
+            cutoff_date = timezone.now().date() - timedelta(days=int(days))
+            queryset = queryset.filter(date__gte=cutoff_date)
+        return queryset.order_by('-date')
+
+
+class AILearningDataViewSet(viewsets.ModelViewSet):
+    queryset = AILearningData.objects.all()
+    serializer_class = AILearningDataSerializer
+    permission_classes = [permissions.AllowAny]
+    
+    def get_queryset(self):
+        return super().get_queryset().order_by('-created_at')
+
+
+class AIPromptTemplateViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = AIPromptTemplate.objects.all()
+    serializer_class = AIPromptTemplateSerializer
+    permission_classes = [permissions.AllowAny]
+    
+    def get_queryset(self):
+        return super().get_queryset().filter(is_active=True).order_by('-version')

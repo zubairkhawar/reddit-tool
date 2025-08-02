@@ -4,7 +4,8 @@ from .views import (
     KeywordViewSet, SubredditViewSet, RedditPostViewSet,
     ClassificationViewSet, ReplyViewSet, NotificationViewSet,
     AIPersonaViewSet, PerformanceMetricsViewSet, DashboardViewSet,
-    SystemConfigViewSet
+    SystemConfigViewSet, LeaderboardViewSet, AILearningDataViewSet,
+    AIPromptTemplateViewSet, AIPerformanceMetricsViewSet
 )
 
 router = DefaultRouter()
@@ -18,6 +19,10 @@ router.register(r'ai-personas', AIPersonaViewSet)
 router.register(r'performance-metrics', PerformanceMetricsViewSet)
 router.register(r'dashboard', DashboardViewSet, basename='dashboard')
 router.register(r'system-config', SystemConfigViewSet)
+router.register(r'leaderboard', LeaderboardViewSet)
+router.register(r'ai-learning', AILearningDataViewSet)
+router.register(r'ai-templates', AIPromptTemplateViewSet)
+router.register(r'ai-performance', AIPerformanceMetricsViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

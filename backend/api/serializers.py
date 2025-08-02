@@ -1,8 +1,9 @@
 from rest_framework import serializers
 from reddit.models import (
     Keyword, Subreddit, RedditPost, Classification, Reply, 
-    Notification, AIPersona, PerformanceMetrics, SystemConfig
+    Notification, AIPersona, PerformanceMetrics, SystemConfig, Leaderboard
 )
+from langagent.models import AILearningData, AIPromptTemplate, AIPerformanceMetrics
 
 
 class KeywordSerializer(serializers.ModelSerializer):
@@ -101,3 +102,27 @@ class LeadSummarySerializer(serializers.Serializer):
     classification = ClassificationSerializer()
     replies = ReplySerializer(many=True)
     engagement_score = serializers.FloatField() 
+
+
+class LeaderboardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Leaderboard
+        fields = '__all__'
+
+
+class AILearningDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AILearningData
+        fields = '__all__'
+
+
+class AIPromptTemplateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AIPromptTemplate
+        fields = '__all__'
+
+
+class AIPerformanceMetricsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AIPerformanceMetrics
+        fields = '__all__' 
