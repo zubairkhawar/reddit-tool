@@ -32,25 +32,73 @@ class Subreddit(models.Model):
 
 
 class RedditPost(models.Model):
-    """Reddit posts that have been scraped"""
-    post_id = models.CharField(max_length=20, unique=True)
+    """Reddit post with metadata and engagement tracking"""
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('urgent', 'Urgent'),
+    ]
+
+    reddit_id = models.CharField(max_length=20, unique=True)
     title = models.TextField()
-    body = models.TextField(blank=True)
+    content = models.TextField()
     author = models.CharField(max_length=50)
-    subreddit = models.CharField(max_length=50)
+    subreddit = models.ForeignKey(Subreddit, on_delete=models.CASCADE, related_name='posts')
     url = models.URLField()
     score = models.IntegerField(default=0)
-    num_comments = models.IntegerField(default=0)
-    created_utc = models.DateTimeField()
-    scraped_at = models.DateTimeField(auto_now_add=True)
-    is_deleted = models.BooleanField(default=False)
-    is_blocked = models.BooleanField(default=False)
+    comment_count = models.IntegerField(default=0)
+    created_at = models.DateTimeField()
+    fetched_at = models.DateTimeField(auto_now_add=True)
+    is_opportunity = models.BooleanField(default=False)
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='low')
+    
+    # Old lead monitoring fields
+    last_monitored_at = models.DateTimeField(blank=True, null=True)
+    monitoring_enabled = models.BooleanField(default=True)
+    engagement_increased = models.BooleanField(default=False)
+    new_comments_since_last_check = models.IntegerField(default=0)
+    
+    # Follow-up automation fields
+    follow_up_sent = models.BooleanField(default=False)
+    follow_up_sent_at = models.DateTimeField(blank=True, null=True)
+    follow_up_content = models.TextField(blank=True, null=True)
+    follow_up_response_received = models.BooleanField(default=False)
+    follow_up_response_content = models.TextField(blank=True, null=True)
 
     class Meta:
-        ordering = ['-created_utc']
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['created_at']),
+            models.Index(fields=['is_opportunity']),
+            models.Index(fields=['priority']),
+            models.Index(fields=['last_monitored_at']),
+        ]
 
     def __str__(self):
-        return f"{self.title[:50]}..."
+        return f"{self.title[:50]} - {self.subreddit.name}"
+
+    @property
+    def engagement_rate(self):
+        """Calculate engagement rate based on score and comments"""
+        if self.comment_count == 0:
+            return 0
+        return (self.score + self.comment_count) / self.comment_count
+
+    def should_send_follow_up(self):
+        """Determine if a follow-up should be sent based on engagement"""
+        if self.follow_up_sent:
+            return False
+        
+        # Send follow-up if engagement increased significantly
+        if self.engagement_increased and self.score > 10:
+            return True
+        
+        # Send follow-up if there are new comments and we have a reply
+        if self.new_comments_since_last_check > 0 and self.replies.exists():
+            return True
+        
+        return False
 
 
 class Classification(models.Model):
@@ -129,27 +177,33 @@ class Reply(models.Model):
 
 
 class Notification(models.Model):
-    """System notifications"""
-    NOTIFICATION_TYPES = [
-        ('reply_received', 'Reply Received'),
+    """System notifications for users"""
+    NOTIFICATION_TYPE_CHOICES = [
         ('high_priority', 'High Priority Post'),
-        ('engagement', 'High Engagement'),
+        ('reply_posted', 'Reply Posted'),
+        ('engagement_increase', 'Engagement Increase'),
+        ('follow_up_sent', 'Follow-up Sent'),
+        ('success_marked', 'Success Marked'),
         ('error', 'Error'),
-        ('info', 'Information'),
     ]
-
+    
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPE_CHOICES)
+    title = models.CharField(max_length=200)
     message = models.TextField()
-    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
+    post = models.ForeignKey(RedditPost, on_delete=models.CASCADE, null=True, blank=True)
     is_read = models.BooleanField(default=False)
-    related_post = models.ForeignKey(RedditPost, on_delete=models.CASCADE, null=True, blank=True)
-    related_reply = models.ForeignKey(Reply, on_delete=models.CASCADE, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    
+    # WhatsApp notification fields
+    whatsapp_sent = models.BooleanField(default=False)
+    whatsapp_sent_at = models.DateTimeField(blank=True, null=True)
+    whatsapp_message_id = models.CharField(max_length=100, blank=True, null=True)
+    
     class Meta:
         ordering = ['-created_at']
-
+    
     def __str__(self):
-        return f"{self.notification_type}: {self.message[:50]}..."
+        return f"{self.get_notification_type_display()}: {self.title}"
 
 
 class AIPersona(models.Model):
@@ -218,3 +272,65 @@ class SystemConfig(models.Model):
         obj.description = description
         obj.save()
         return obj
+
+
+class Leaderboard(models.Model):
+    """Track performance metrics for keywords, subreddits, and reply templates"""
+    METRIC_TYPE_CHOICES = [
+        ('keyword', 'Keyword'),
+        ('subreddit', 'Subreddit'),
+        ('reply_template', 'Reply Template'),
+    ]
+    
+    metric_type = models.CharField(max_length=20, choices=METRIC_TYPE_CHOICES)
+    name = models.CharField(max_length=100)  # keyword name, subreddit name, or template identifier
+    total_posts = models.IntegerField(default=0)
+    total_opportunities = models.IntegerField(default=0)
+    total_replies = models.IntegerField(default=0)
+    total_engagement = models.IntegerField(default=0)  # sum of upvotes
+    success_rate = models.FloatField(default=0.0)  # percentage of successful replies
+    avg_engagement_rate = models.FloatField(default=0.0)
+    last_updated = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['metric_type', 'name']
+        ordering = ['-total_engagement', '-success_rate']
+    
+    def __str__(self):
+        return f"{self.get_metric_type_display()}: {self.name}"
+    
+    def update_metrics(self):
+        """Update metrics based on current data"""
+        if self.metric_type == 'keyword':
+            posts = RedditPost.objects.filter(
+                title__icontains=self.name
+            ).exclude(title__icontains=self.name + 's')  # Avoid plurals
+        elif self.metric_type == 'subreddit':
+            posts = RedditPost.objects.filter(subreddit__name=self.name)
+        else:  # reply_template
+            posts = RedditPost.objects.filter(
+                replies__content__icontains=self.name
+            ).distinct()
+        
+        self.total_posts = posts.count()
+        self.total_opportunities = posts.filter(is_opportunity=True).count()
+        self.total_replies = posts.filter(replies__isnull=False).count()
+        
+        # Calculate engagement
+        total_upvotes = sum(post.replies.aggregate(
+            total=models.Sum('upvotes')
+        )['total'] or 0 for post in posts)
+        self.total_engagement = total_upvotes
+        
+        # Calculate success rate
+        successful_replies = posts.filter(
+            replies__marked_successful=True
+        ).count()
+        self.success_rate = (successful_replies / self.total_replies * 100) if self.total_replies > 0 else 0
+        
+        # Calculate average engagement rate
+        if self.total_posts > 0:
+            avg_engagement = sum(post.engagement_rate for post in posts) / self.total_posts
+            self.avg_engagement_rate = avg_engagement
+        
+        self.save()
