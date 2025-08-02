@@ -20,19 +20,19 @@ from django.shortcuts import get_object_or_404
 class KeywordViewSet(viewsets.ModelViewSet):
     queryset = Keyword.objects.all()
     serializer_class = KeywordSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
 
 class SubredditViewSet(viewsets.ModelViewSet):
     queryset = Subreddit.objects.all()
     serializer_class = SubredditSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
 
 class RedditPostViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = RedditPost.objects.all()
     serializer_class = RedditPostSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
     
     def get_queryset(self):
         queryset = RedditPost.objects.all()
@@ -63,7 +63,7 @@ class RedditPostViewSet(viewsets.ReadOnlyModelViewSet):
 class ClassificationViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Classification.objects.all()
     serializer_class = ClassificationSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
     
     def get_queryset(self):
         queryset = Classification.objects.all()
@@ -91,7 +91,7 @@ class ReplyViewSet(viewsets.ModelViewSet):
     search_fields = ['content', 'post__title']
     ordering_fields = ['created_at', 'confidence_score', 'upvotes']
     ordering = ['-created_at']
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -142,7 +142,7 @@ class ReplyViewSet(viewsets.ModelViewSet):
 class NotificationViewSet(viewsets.ModelViewSet):
     queryset = Notification.objects.all()
     serializer_class = NotificationSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
     
     def get_queryset(self):
         queryset = Notification.objects.all()
@@ -173,17 +173,17 @@ class NotificationViewSet(viewsets.ModelViewSet):
 class AIPersonaViewSet(viewsets.ModelViewSet):
     queryset = AIPersona.objects.all()
     serializer_class = AIPersonaSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
 
 class PerformanceMetricsViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = PerformanceMetrics.objects.all()
     serializer_class = PerformanceMetricsSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
 
 class DashboardViewSet(viewsets.ViewSet):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
     
     @action(detail=False, methods=['get'])
     def stats(self, request):
@@ -202,7 +202,7 @@ class DashboardViewSet(viewsets.ViewSet):
         engagement_rate = (total_upvotes / total_replies.count()) if total_replies.count() > 0 else 0
         
         # Today's stats
-        today_posts = RedditPost.objects.filter(scraped_at__date=today).count()
+        today_posts = RedditPost.objects.filter(fetched_at__date=today).count()
         today_opportunities = Classification.objects.filter(
             is_opportunity=True, created_at__date=today
         ).count()

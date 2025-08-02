@@ -2,6 +2,7 @@ import praw
 from django.conf import settings
 from django.utils import timezone
 from datetime import datetime, timedelta
+import pytz
 from .models import RedditPost, Keyword, Subreddit
 import logging
 
@@ -51,7 +52,7 @@ class RedditFetcher:
             # Fetch new posts
             for submission in subreddit.new(limit=100):
                 # Check if post is recent enough
-                post_time = datetime.fromtimestamp(submission.created_utc, tz=timezone.utc)
+                post_time = datetime.fromtimestamp(submission.created_utc, tz=pytz.UTC)
                 if post_time < cutoff_time:
                     continue
                 
@@ -79,15 +80,15 @@ class RedditFetcher:
     def _extract_post_data(self, submission):
         """Extract relevant data from a Reddit submission"""
         return {
-            'post_id': submission.id,
+            'reddit_id': submission.id,
             'title': submission.title,
-            'body': submission.selftext,
+            'content': submission.selftext,
             'author': str(submission.author) if submission.author else '[deleted]',
             'subreddit': submission.subreddit.display_name,
             'url': f"https://reddit.com{submission.permalink}",
             'score': submission.score,
-            'num_comments': submission.num_comments,
-            'created_utc': datetime.fromtimestamp(submission.created_utc, tz=timezone.utc),
+            'comment_count': submission.num_comments,
+            'created_at': datetime.fromtimestamp(submission.created_utc, tz=pytz.UTC),
         }
     
     def save_posts(self, posts_data):
@@ -97,7 +98,7 @@ class RedditFetcher:
         for post_data in posts_data:
             try:
                 # Check if post already exists
-                if RedditPost.objects.filter(post_id=post_data['post_id']).exists():
+                if RedditPost.objects.filter(reddit_id=post_data['reddit_id']).exists():
                     continue
                 
                 # Create new post
@@ -106,7 +107,7 @@ class RedditFetcher:
                 logger.info(f"Saved post: {post.title[:50]}...")
                 
             except Exception as e:
-                logger.error(f"Error saving post {post_data.get('post_id', 'unknown')}: {e}")
+                logger.error(f"Error saving post {post_data.get('reddit_id', 'unknown')}: {e}")
         
         return saved_posts
     

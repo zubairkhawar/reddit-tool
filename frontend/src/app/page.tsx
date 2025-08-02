@@ -28,6 +28,21 @@ import {
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"]
 
+// Safe time display component
+function TimeDisplay() {
+  const [time, setTime] = useState<string>("")
+  
+  useEffect(() => {
+    setTime(new Date().toLocaleTimeString())
+    const interval = setInterval(() => {
+      setTime(new Date().toLocaleTimeString())
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [])
+  
+  return <span>{time}</span>
+}
+
 export default function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -88,7 +103,7 @@ export default function Dashboard() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <div className="text-sm text-gray-500">
-          Last updated: {new Date().toLocaleTimeString()}
+          Last updated: <TimeDisplay />
         </div>
       </div>
 
@@ -240,7 +255,7 @@ export default function Dashboard() {
               <div className="flex-1">
                 <p className="text-sm text-gray-900">{notification.message}</p>
                 <p className="text-xs text-gray-500 mt-1">
-                  {new Date(notification.created_at).toLocaleString()}
+                  {notification.created_at}
                 </p>
               </div>
             </div>
