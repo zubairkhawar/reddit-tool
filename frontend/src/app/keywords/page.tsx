@@ -18,9 +18,10 @@ export default function KeywordsPage() {
   const fetchKeywords = async () => {
     try {
       const data = await apiClient.getKeywords()
-      setKeywords(data)
+      setKeywords(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error("Error fetching keywords:", error)
+      setKeywords([])
     } finally {
       setLoading(false)
     }
