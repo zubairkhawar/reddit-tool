@@ -6,14 +6,15 @@ from django.utils import timezone
 from datetime import timedelta
 from reddit.models import (
     Keyword, Subreddit, RedditPost, Classification, Reply, 
-    Notification, AIPersona, PerformanceMetrics
+    Notification, AIPersona, PerformanceMetrics, SystemConfig
 )
 from .serializers import (
     KeywordSerializer, SubredditSerializer, RedditPostSerializer,
     ClassificationSerializer, ReplySerializer, NotificationSerializer,
     AIPersonaSerializer, PerformanceMetricsSerializer,
-    DashboardStatsSerializer, LeadSummarySerializer
+    DashboardStatsSerializer, LeadSummarySerializer, SystemConfigSerializer
 )
+from django.shortcuts import get_object_or_404
 
 
 class KeywordViewSet(viewsets.ModelViewSet):
@@ -86,31 +87,56 @@ class ClassificationViewSet(viewsets.ReadOnlyModelViewSet):
 class ReplyViewSet(viewsets.ModelViewSet):
     queryset = Reply.objects.all()
     serializer_class = ReplySerializer
+    filterset_fields = ['status', 'requires_manual_approval']
+    search_fields = ['content', 'post__title']
+    ordering_fields = ['created_at', 'confidence_score', 'upvotes']
+    ordering = ['-created_at']
     permission_classes = [permissions.IsAuthenticated]
-    
+
     def get_queryset(self):
-        queryset = Reply.objects.all()
-        
-        # Filter by status
+        queryset = super().get_queryset()
         status = self.request.query_params.get('status', None)
+        requires_approval = self.request.query_params.get('requires_approval', None)
+        
         if status:
             queryset = queryset.filter(status=status)
+        if requires_approval is not None:
+            queryset = queryset.filter(requires_manual_approval=requires_approval.lower() == 'true')
         
         return queryset
-    
+
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         reply = self.get_object()
         reply.status = 'approved'
+        reply.approved_by = request.user
+        reply.approved_at = timezone.now()
         reply.save()
         return Response({'status': 'approved'})
-    
+
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
         reply = self.get_object()
         reply.status = 'rejected'
         reply.save()
         return Response({'status': 'rejected'})
+
+    @action(detail=True, methods=['post'])
+    def mark_successful(self, request, pk=None):
+        reply = self.get_object()
+        reply.marked_successful = True
+        reply.marked_successful_at = timezone.now()
+        reply.marked_successful_by = request.user
+        reply.success_notes = request.data.get('notes', '')
+        reply.save()
+        return Response({'status': 'marked_successful'})
+
+    @action(detail=True, methods=['post'])
+    def edit_content(self, request, pk=None):
+        reply = self.get_object()
+        reply.edited_content = request.data.get('content', '')
+        reply.save()
+        return Response({'status': 'content_edited'})
 
 
 class NotificationViewSet(viewsets.ModelViewSet):
@@ -231,3 +257,13 @@ class DashboardViewSet(viewsets.ViewSet):
             lead_summaries.append(lead_summary)
         
         return Response(lead_summaries)
+
+
+class SystemConfigViewSet(viewsets.ModelViewSet):
+    queryset = SystemConfig.objects.all()
+    serializer_class = SystemConfigSerializer
+    lookup_field = 'key'
+    
+    def get_object(self):
+        key = self.kwargs.get('key')
+        return get_object_or_404(SystemConfig, key=key)

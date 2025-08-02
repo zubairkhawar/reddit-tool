@@ -3,7 +3,8 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     KeywordViewSet, SubredditViewSet, RedditPostViewSet,
     ClassificationViewSet, ReplyViewSet, NotificationViewSet,
-    AIPersonaViewSet, PerformanceMetricsViewSet, DashboardViewSet
+    AIPersonaViewSet, PerformanceMetricsViewSet, DashboardViewSet,
+    SystemConfigViewSet
 )
 
 router = DefaultRouter()
@@ -16,6 +17,7 @@ router.register(r'notifications', NotificationViewSet)
 router.register(r'ai-personas', AIPersonaViewSet)
 router.register(r'performance-metrics', PerformanceMetricsViewSet)
 router.register(r'dashboard', DashboardViewSet, basename='dashboard')
+router.register(r'system-config', SystemConfigViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

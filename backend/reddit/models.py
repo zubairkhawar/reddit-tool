@@ -85,29 +85,47 @@ class Reply(models.Model):
     """Replies posted to Reddit posts"""
     STATUS_CHOICES = [
         ('pending', 'Pending'),
-        ('posted', 'Posted'),
-        ('failed', 'Failed'),
         ('approved', 'Approved'),
         ('rejected', 'Rejected'),
+        ('posted', 'Posted'),
+        ('failed', 'Failed'),
     ]
 
     post = models.ForeignKey(RedditPost, on_delete=models.CASCADE, related_name='replies')
     content = models.TextField()
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
-    reddit_comment_id = models.CharField(max_length=20, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    reddit_comment_id = models.CharField(max_length=20, blank=True, null=True)
     upvotes = models.IntegerField(default=0)
     downvotes = models.IntegerField(default=0)
     reply_count = models.IntegerField(default=0)
-    posted_at = models.DateTimeField(null=True, blank=True)
+    posted_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    error_message = models.TextField(blank=True)
+    error_message = models.TextField(blank=True, null=True)
+
+    # New fields for manual approval
+    confidence_score = models.FloatField(default=0.0)
+    requires_manual_approval = models.BooleanField(default=False)
+    edited_content = models.TextField(blank=True, null=True)
+    approved_by = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_replies')
+    approved_at = models.DateTimeField(blank=True, null=True)
+
+    # Success tracking
+    marked_successful = models.BooleanField(default=False)
+    marked_successful_at = models.DateTimeField(blank=True, null=True)
+    marked_successful_by = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='successful_replies')
+    success_notes = models.TextField(blank=True, null=True)
+
+    # Follow-up tracking
+    follow_up_sent = models.BooleanField(default=False)
+    follow_up_content = models.TextField(blank=True, null=True)
+    follow_up_sent_at = models.DateTimeField(blank=True, null=True)
 
     class Meta:
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"Reply to {self.post.title[:30]}"
+        return f"Reply to {self.post.title[:50]}"
 
 
 class Notification(models.Model):
@@ -171,3 +189,32 @@ class PerformanceMetrics(models.Model):
 
     def __str__(self):
         return f"Metrics for {self.date}"
+
+
+class SystemConfig(models.Model):
+    """System configuration for AI behavior and thresholds"""
+    key = models.CharField(max_length=100, unique=True)
+    value = models.TextField()
+    description = models.TextField(blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['key']
+
+    def __str__(self):
+        return f"{self.key}: {self.value}"
+
+    @classmethod
+    def get_value(cls, key, default=None):
+        try:
+            return cls.objects.get(key=key).value
+        except cls.DoesNotExist:
+            return default
+
+    @classmethod
+    def set_value(cls, key, value, description=""):
+        obj, created = cls.objects.get_or_create(key=key)
+        obj.value = str(value)
+        obj.description = description
+        obj.save()
+        return obj

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from reddit.models import (
     Keyword, Subreddit, RedditPost, Classification, Reply, 
-    Notification, AIPersona, PerformanceMetrics
+    Notification, AIPersona, PerformanceMetrics, SystemConfig
 )
 
 
@@ -45,11 +45,19 @@ class ClassificationSerializer(serializers.ModelSerializer):
 
 class ReplySerializer(serializers.ModelSerializer):
     post_title = serializers.CharField(source='post.title', read_only=True)
-    post_url = serializers.URLField(source='post.url', read_only=True)
+    post_url = serializers.CharField(source='post.url', read_only=True)
     
     class Meta:
         model = Reply
-        fields = '__all__'
+        fields = [
+            'id', 'post', 'content', 'status', 'reddit_comment_id',
+            'upvotes', 'downvotes', 'reply_count', 'posted_at',
+            'created_at', 'updated_at', 'error_message',
+            'post_title', 'post_url', 'confidence_score', 'requires_manual_approval',
+            'edited_content', 'approved_by', 'approved_at',
+            'marked_successful', 'marked_successful_at', 'marked_successful_by',
+            'success_notes', 'follow_up_sent', 'follow_up_content', 'follow_up_sent_at'
+        ]
 
 
 class NotificationSerializer(serializers.ModelSerializer):
@@ -68,6 +76,12 @@ class PerformanceMetricsSerializer(serializers.ModelSerializer):
     class Meta:
         model = PerformanceMetrics
         fields = '__all__'
+
+
+class SystemConfigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SystemConfig
+        fields = ['key', 'value', 'description', 'updated_at']
 
 
 class DashboardStatsSerializer(serializers.Serializer):
