@@ -23,11 +23,14 @@ export default function AILearningPage() {
         apiClient.getAIPromptTemplates(),
         apiClient.getAIPerformanceMetrics(30)
       ])
-      setLearningData(data)
-      setTemplates(temps)
-      setMetrics(mets)
+      setLearningData(Array.isArray(data) ? data : [])
+      setTemplates(Array.isArray(temps) ? temps : [])
+      setMetrics(Array.isArray(mets) ? mets : [])
     } catch (error) {
       console.error('Error loading AI learning data:', error)
+      setLearningData([])
+      setTemplates([])
+      setMetrics([])
     } finally {
       setLoading(false)
     }

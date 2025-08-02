@@ -17,9 +17,10 @@ export default function FollowUpsPage() {
     try {
       setLoading(true)
       const data = await apiClient.getFollowUpCandidates()
-      setFollowUpCandidates(data)
+      setFollowUpCandidates(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Error loading follow-up candidates:', error)
+      setFollowUpCandidates([])
     } finally {
       setLoading(false)
     }

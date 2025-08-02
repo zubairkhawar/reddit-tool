@@ -17,9 +17,10 @@ export default function LeaderboardPage() {
     try {
       setLoading(true)
       const data = await apiClient.getLeaderboard(selectedType === 'all' ? undefined : selectedType)
-      setLeaderboard(data)
+      setLeaderboard(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Error loading leaderboard:', error)
+      setLeaderboard([])
     } finally {
       setLoading(false)
     }

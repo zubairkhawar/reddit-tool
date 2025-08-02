@@ -16,9 +16,10 @@ export default function OldLeadsPage() {
     try {
       setLoading(true)
       const data = await apiClient.getOldLeads()
-      setOldLeads(data)
+      setOldLeads(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Error loading old leads:', error)
+      setOldLeads([])
     } finally {
       setLoading(false)
     }
