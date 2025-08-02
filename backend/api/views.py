@@ -62,6 +62,76 @@ class RedditPostViewSet(viewsets.ReadOnlyModelViewSet):
         
         return queryset
 
+    @action(detail=False, methods=['get'])
+    def old_leads(self, request):
+        """Get old leads that are being monitored"""
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        # Get posts that are opportunities and have been monitored recently
+        cutoff_date = timezone.now() - timedelta(days=7)
+        old_leads = RedditPost.objects.filter(
+            is_opportunity=True,
+            monitoring_enabled=True,
+            last_monitored_at__lt=cutoff_date
+        ).order_by('-created_at')
+        
+        serializer = RedditPostSerializer(old_leads, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def follow_up_candidates(self, request):
+        """Get posts that need follow-up replies"""
+        follow_up_candidates = RedditPost.objects.filter(
+            is_opportunity=True,
+            engagement_increased=True,
+            follow_up_sent=False
+        ).order_by('-created_at')
+        
+        serializer = RedditPostSerializer(follow_up_candidates, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def enable_monitoring(self, request, pk=None):
+        """Enable monitoring for a post"""
+        post = self.get_object()
+        post.monitoring_enabled = True
+        post.save()
+        return Response({'status': 'monitoring_enabled'})
+
+    @action(detail=True, methods=['post'])
+    def disable_monitoring(self, request, pk=None):
+        """Disable monitoring for a post"""
+        post = self.get_object()
+        post.monitoring_enabled = False
+        post.save()
+        return Response({'status': 'monitoring_disabled'})
+
+    @action(detail=True, methods=['post'])
+    def send_follow_up(self, request, pk=None):
+        """Send a follow-up reply to a post"""
+        post = self.get_object()
+        content = request.data.get('content', '')
+        
+        if not content:
+            return Response({'error': 'Content is required'}, status=400)
+        
+        # Create a reply for the follow-up
+        reply = Reply.objects.create(
+            post=post,
+            content=content,
+            status='posted',
+            posted_at=timezone.now()
+        )
+        
+        # Update post with follow-up info
+        post.follow_up_sent = True
+        post.follow_up_sent_at = timezone.now()
+        post.follow_up_content = content
+        post.save()
+        
+        return Response({'status': 'follow_up_sent', 'reply_id': reply.id})
+
 
 class ClassificationViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Classification.objects.all()
