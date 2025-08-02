@@ -188,7 +188,7 @@ class Notification(models.Model):
     ]
     
     notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPE_CHOICES)
-    title = models.CharField(max_length=200)
+    title = models.CharField(max_length=200, default="Notification")
     message = models.TextField()
     post = models.ForeignKey(RedditPost, on_delete=models.CASCADE, null=True, blank=True)
     is_read = models.BooleanField(default=False)
