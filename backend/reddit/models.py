@@ -274,6 +274,30 @@ class SystemConfig(models.Model):
         return obj
 
 
+class ReplyTemplate(models.Model):
+    """Templates for different types of replies"""
+    TEMPLATE_TYPE_CHOICES = [
+        ('web_development', 'Web Development'),
+        ('ai_automation', 'AI/Automation'),
+        ('mobile_app', 'Mobile App Development'),
+        ('data_analysis', 'Data Analysis'),
+        ('general', 'General'),
+    ]
+    
+    name = models.CharField(max_length=100)
+    template_type = models.CharField(max_length=20, choices=TEMPLATE_TYPE_CHOICES)
+    content = models.TextField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['template_type', 'name']
+    
+    def __str__(self):
+        return f"{self.get_template_type_display()}: {self.name}"
+
+
 class Leaderboard(models.Model):
     """Track performance metrics for keywords, subreddits, and reply templates"""
     METRIC_TYPE_CHOICES = [

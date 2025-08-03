@@ -11,26 +11,33 @@ import {
   Hash,
   Bell,
   BarChart3,
-  Settings,
   Trophy,
   Brain,
   Monitor,
-  MessageCircle
+  MessageCircle,
+  Settings,
+  FileText,
+  Globe,
+  Search,
+  RefreshCw,
+  User,
+  MessageCircle as ChatBubbleLeftRight
 } from "lucide-react"
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: Home },
-  { name: 'Leads', href: '/leads', icon: TrendingUp },
-  { name: 'Replies', href: '/replies', icon: MessageSquare },
-  { name: 'Keywords', href: '/keywords', icon: Target },
-  { name: 'Subreddits', href: '/subreddits', icon: Hash },
-  { name: 'Notifications', href: '/notifications', icon: Bell },
+  { name: 'Leads', href: '/leads', icon: User },
+  { name: 'Replies', href: '/replies', icon: ChatBubbleLeftRight },
+  { name: 'Keywords', href: '/keywords', icon: Search },
+  { name: 'Subreddits', href: '/subreddits', icon: Globe },
+  { name: 'Templates', href: '/templates', icon: FileText },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+  { name: 'Notifications', href: '/notifications', icon: Bell },
+  { name: 'Settings', href: '/settings', icon: Settings },
   { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
   { name: 'AI Learning', href: '/ai-learning', icon: Brain },
   { name: 'Old Leads', href: '/old-leads', icon: Monitor },
-  { name: 'Follow-ups', href: '/follow-ups', icon: MessageCircle },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Follow-ups', href: '/follow-ups', icon: RefreshCw },
 ]
 
 export default function Sidebar() {

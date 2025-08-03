@@ -35,32 +35,23 @@ def test_reddit_fetcher():
         # Initialize fetcher
         fetcher = RedditFetcher()
         
-        # Test fetching posts
-        print(f"\n📡 Testing Reddit fetch...")
+        # Test fetching and saving posts
+        print(f"\n📡 Testing Reddit fetch and save...")
         
-        # Fetch posts
-        posts = fetcher.fetch_posts(hours_back=24)
+        # Fetch and save posts
+        saved_posts = fetcher.fetch_and_save(hours_back=24)
         
-        if posts:
-            print(f"✅ Successfully fetched {len(posts)} posts")
+        if saved_posts:
+            print(f"✅ Successfully fetched and saved {len(saved_posts)} posts")
             
-            # Test AI agent
+            # Test AI agent with actual saved posts
             agent = RedditLeadAgent()
             
-            for post_data in posts[:3]:  # Test first 3 posts
-                print(f"\n🤖 Testing AI classification for: {post_data['title'][:50]}...")
-                
-                # Create a mock post object for testing
-                class MockPost:
-                    def __init__(self, data):
-                        self.title = data['title']
-                        self.body = data['content']  # Changed from 'body' to 'content'
-                        self.id = data['reddit_id']  # Changed from 'post_id' to 'reddit_id'
-                
-                mock_post = MockPost(post_data)
+            for post in saved_posts[:3]:  # Test first 3 posts
+                print(f"\n🤖 Testing AI classification for: {post.title[:50]}...")
                 
                 # Classify post
-                classification = agent.classify_post(mock_post)
+                classification = agent.classify_post(post)
                 if classification:
                     print(f"   Classification: {classification.is_opportunity}")
                     
@@ -71,12 +62,11 @@ def test_reddit_fetcher():
                         print(f"   Budget: {classification.budget_amount}")
                         
                         # Generate reply
-                        reply = agent.generate_reply(mock_post, classification)
+                        reply = agent.generate_reply(post, classification)
                         if reply:
                             print(f"   💬 Generated reply: {reply.content[:100]}...")
-        
         else:
-            print("⚠️ No posts fetched. This might be normal if the subreddit is quiet.")
+            print("⚠️ No new posts saved. This might be normal if all posts were already in the database.")
         
         print("\n🎉 RedditLead.AI test completed!")
         return True

@@ -1,8 +1,8 @@
 from django.contrib import admin
 from .models import (
     Keyword, Subreddit, RedditPost, Classification, Reply, 
-    Notification, AIPersona, PerformanceMetrics, SystemConfig,
-    Leaderboard
+    Notification, AIPersona, PerformanceMetrics, SystemConfig, 
+    Leaderboard, ReplyTemplate
 )
 from langagent.models import AILearningData, AIPromptTemplate, AIPerformanceMetrics
 
@@ -122,6 +122,14 @@ class SystemConfigAdmin(admin.ModelAdmin):
     search_fields = ['key', 'description']
     ordering = ['key']
     readonly_fields = ['updated_at']
+
+@admin.register(ReplyTemplate)
+class ReplyTemplateAdmin(admin.ModelAdmin):
+    list_display = ['name', 'template_type', 'is_active', 'created_at']
+    list_filter = ['template_type', 'is_active']
+    search_fields = ['name', 'content']
+    ordering = ['template_type', 'name']
+
 
 @admin.register(Leaderboard)
 class LeaderboardAdmin(admin.ModelAdmin):

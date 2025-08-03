@@ -79,12 +79,19 @@ class RedditFetcher:
     
     def _extract_post_data(self, submission):
         """Extract relevant data from a Reddit submission"""
+        # Get or create the subreddit instance
+        subreddit_name = submission.subreddit.display_name
+        subreddit, created = Subreddit.objects.get_or_create(
+            name=subreddit_name,
+            defaults={'is_active': True}
+        )
+        
         return {
             'reddit_id': submission.id,
             'title': submission.title,
             'content': submission.selftext,
             'author': str(submission.author) if submission.author else '[deleted]',
-            'subreddit': submission.subreddit.display_name,
+            'subreddit': subreddit,  # Use the Subreddit instance
             'url': f"https://reddit.com{submission.permalink}",
             'score': submission.score,
             'comment_count': submission.num_comments,

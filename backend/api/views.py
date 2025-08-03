@@ -63,21 +63,21 @@ class RedditPostViewSet(viewsets.ReadOnlyModelViewSet):
         return queryset
 
     @action(detail=False, methods=['get'])
-    def old_leads(self, request):
+    def test(self, request):
+        """Test action to verify @action decorator works"""
+        return Response({'status': 'test_action_works_reloaded'})
+
+    @action(detail=False, methods=['get'])
+    def new_test(self, request):
+        """New test method"""
+        return Response({'status': 'new_test_works'})
+
+    @action(detail=False, methods=['get'])
+    def debug_test(self, request):
         """Get old leads that are being monitored"""
-        from django.utils import timezone
-        from datetime import timedelta
-        
-        # Get posts that are opportunities and have been monitored recently
-        cutoff_date = timezone.now() - timedelta(days=7)
-        old_leads = RedditPost.objects.filter(
-            is_opportunity=True,
-            monitoring_enabled=True,
-            last_monitored_at__lt=cutoff_date
-        ).order_by('-created_at')
-        
-        serializer = RedditPostSerializer(old_leads, many=True)
-        return Response(serializer.data)
+        print("DEBUG: debug_test method called")  # Add print statement
+        # Simplified version for testing
+        return Response([])
 
     @action(detail=False, methods=['get'])
     def follow_up_candidates(self, request):
@@ -131,6 +131,11 @@ class RedditPostViewSet(viewsets.ReadOnlyModelViewSet):
         post.save()
         
         return Response({'status': 'follow_up_sent', 'reply_id': reply.id})
+
+    @action(detail=False, methods=['get'])
+    def final_test(self, request):
+        """Final test method at the end of the class"""
+        return Response({'status': 'final_test_works'})
 
 
 class ClassificationViewSet(viewsets.ReadOnlyModelViewSet):
