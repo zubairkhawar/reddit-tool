@@ -19,7 +19,7 @@ import {
   FileText,
   Globe,
   Search,
-  RefreshCw,
+  RotateCcw,
   User,
   MessageCircle as ChatBubbleLeftRight
 } from "lucide-react"
@@ -37,7 +37,7 @@ const navigation = [
   { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
   { name: 'AI Learning', href: '/ai-learning', icon: Brain },
   { name: 'Old Leads', href: '/old-leads', icon: Monitor },
-  { name: 'Follow-ups', href: '/follow-ups', icon: RefreshCw },
+  { name: 'Follow-ups', href: '/follow-ups', icon: RotateCcw },
 ]
 
 export default function Sidebar() {

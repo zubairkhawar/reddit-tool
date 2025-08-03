@@ -185,11 +185,25 @@ class ReplyViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
+        """Approve a reply for posting"""
         reply = self.get_object()
         reply.status = 'approved'
-        reply.approved_by = request.user
         reply.approved_at = timezone.now()
+        
+        # Only set approved_by if user is authenticated
+        if request.user.is_authenticated:
+            reply.approved_by = request.user
+        
         reply.save()
+        
+        # Create notification
+        Notification.objects.create(
+            notification_type='reply_posted',
+            title='Reply Approved',
+            message=f'Reply to "{reply.post.title[:50]}..." has been approved.',
+            post=reply.post
+        )
+        
         return Response({'status': 'approved'})
 
     @action(detail=True, methods=['post'])
@@ -201,12 +215,18 @@ class ReplyViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def mark_successful(self, request, pk=None):
+        """Mark a reply as successful"""
         reply = self.get_object()
         reply.marked_successful = True
         reply.marked_successful_at = timezone.now()
-        reply.marked_successful_by = request.user
+        
+        # Only set marked_successful_by if user is authenticated
+        if request.user.is_authenticated:
+            reply.marked_successful_by = request.user
+        
         reply.success_notes = request.data.get('notes', '')
         reply.save()
+        
         return Response({'status': 'marked_successful'})
 
     @action(detail=True, methods=['post'])
