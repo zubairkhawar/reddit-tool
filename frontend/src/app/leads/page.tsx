@@ -75,9 +75,9 @@ export default function LeadsPage() {
                     {lead.post.title}
                   </h3>
 
-                  {lead.post.body && (
+                  {lead.post.content && (
                     <p className="text-gray-600 mb-4 line-clamp-3">
-                      {lead.post.body}
+                      {lead.post.content}
                     </p>
                   )}
 
@@ -95,11 +95,11 @@ export default function LeadsPage() {
                   <div className="flex items-center space-x-6 text-sm text-gray-500">
                     <div className="flex items-center space-x-1">
                       <Clock className="h-4 w-4" />
-                      <span>{formatDate(lead.post.created_utc)}</span>
+                      <span>{formatDate(lead.post.created_at)}</span>
                     </div>
                     <div className="flex items-center space-x-1">
                       <MessageSquare className="h-4 w-4" />
-                      <span>{lead.post.num_comments} comments</span>
+                      <span>{lead.post.comment_count} comments</span>
                     </div>
                     <div className="flex items-center space-x-1">
                       <TrendingUp className="h-4 w-4" />
@@ -156,7 +156,7 @@ export default function LeadsPage() {
                             {formatDate(reply.created_at)}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-700">{reply.content}</p>
+                        <p className="text-sm text-gray-700">{reply.display_content || reply.content}</p>
                         {reply.upvotes > 0 && (
                           <div className="flex items-center space-x-2 mt-2 text-xs text-gray-500">
                             <TrendingUp className="h-3 w-3" />

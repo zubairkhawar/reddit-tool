@@ -15,9 +15,8 @@ class RedditPoster:
             client_id=settings.REDDIT_CLIENT_ID,
             client_secret=settings.REDDIT_CLIENT_SECRET,
             user_agent=settings.REDDIT_USER_AGENT,
-            # Add your Reddit username and password here for posting
-            # username='your_username',
-            # password='your_password',
+            username=settings.REDDIT_USERNAME,
+            password=settings.REDDIT_PASSWORD,
         )
     
     def post_pending_replies(self):

@@ -18,6 +18,7 @@ from .serializers import (
     AIPerformanceMetricsSerializer
 )
 from django.shortcuts import get_object_or_404
+from reddit.poster import RedditPoster
 
 
 class KeywordViewSet(viewsets.ModelViewSet):
@@ -204,7 +205,24 @@ class ReplyViewSet(viewsets.ModelViewSet):
             post=reply.post
         )
         
-        return Response({'status': 'approved'})
+        # Post the reply to Reddit using RedditPoster
+        reddit_poster = RedditPoster()
+        try:
+            # Use edited content if available, otherwise use original content
+            content_to_post = reply.edited_content if reply.edited_content else reply.content
+            reply.content = content_to_post  # Update the main content with edited version
+            
+            success = reddit_poster._post_reply(reply)
+            if success:
+                return Response({'status': 'approved_and_posted', 'reply_id': reply.id})
+            else:
+                reply.status = 'rejected'  # Revert status on failure
+                reply.save()
+                return Response({'status': 'approved_failed_to_post', 'error': 'Failed to post to Reddit'}, status=500)
+        except Exception as e:
+            reply.status = 'rejected'  # Revert status on failure
+            reply.save()
+            return Response({'status': 'approved_failed_to_post', 'error': str(e)}, status=500)
 
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):

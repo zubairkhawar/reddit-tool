@@ -163,7 +163,7 @@ export default function RepliesPage() {
                   </h3>
 
                   <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                    <p className="text-gray-700">{reply.content}</p>
+                    <p className="text-gray-700">{reply.display_content || reply.content}</p>
                     {reply.edited_content && (
                       <div className="mt-2 pt-2 border-t border-gray-200">
                         <p className="text-xs text-gray-500 mb-1">Edited version:</p>

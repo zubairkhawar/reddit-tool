@@ -47,11 +47,12 @@ class ClassificationSerializer(serializers.ModelSerializer):
 class ReplySerializer(serializers.ModelSerializer):
     post_title = serializers.CharField(source='post.title', read_only=True)
     post_url = serializers.CharField(source='post.url', read_only=True)
+    display_content = serializers.SerializerMethodField()
     
     class Meta:
         model = Reply
         fields = [
-            'id', 'post', 'content', 'status', 'reddit_comment_id',
+            'id', 'post', 'content', 'display_content', 'status', 'reddit_comment_id',
             'upvotes', 'downvotes', 'reply_count', 'posted_at',
             'created_at', 'updated_at', 'error_message',
             'post_title', 'post_url', 'confidence_score', 'requires_manual_approval',
@@ -59,6 +60,10 @@ class ReplySerializer(serializers.ModelSerializer):
             'marked_successful', 'marked_successful_at', 'marked_successful_by',
             'success_notes', 'follow_up_sent', 'follow_up_content', 'follow_up_sent_at'
         ]
+    
+    def get_display_content(self, obj):
+        """Return edited content if available, otherwise original content"""
+        return obj.edited_content if obj.edited_content else obj.content
 
 
 class NotificationSerializer(serializers.ModelSerializer):

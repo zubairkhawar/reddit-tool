@@ -179,6 +179,8 @@ OPENAI_API_KEY = config('OPENAI_API_KEY', default='')
 REDDIT_CLIENT_ID = config('REDDIT_CLIENT_ID', default='')
 REDDIT_CLIENT_SECRET = config('REDDIT_CLIENT_SECRET', default='')
 REDDIT_USER_AGENT = config('REDDIT_USER_AGENT', default='RedditLead.AI/1.0')
+REDDIT_USERNAME = config('REDDIT_USERNAME', default='')
+REDDIT_PASSWORD = config('REDDIT_PASSWORD', default='')
 
 # Telegram Configuration
 TELEGRAM_BOT_TOKEN = config('TELEGRAM_BOT_TOKEN', default='')
