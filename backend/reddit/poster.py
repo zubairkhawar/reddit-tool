@@ -45,7 +45,7 @@ class RedditPoster:
         """Post a single reply to Reddit"""
         try:
             # Get the Reddit submission
-            submission = self.reddit.submission(id=reply.post.post_id)
+            submission = self.reddit.submission(id=reply.post.reddit_id)
             
             # Post the comment
             comment = submission.reply(reply.content)
@@ -60,9 +60,10 @@ class RedditPoster:
             
             # Create notification
             Notification.objects.create(
+                title='Reply Posted',
                 message=f"Reply posted to: {reply.post.title[:50]}...",
-                notification_type='info',
-                related_reply=reply
+                notification_type='reply_posted',
+                post=reply.post
             )
             
             return True
@@ -100,9 +101,10 @@ class RedditPoster:
                 # Check for high engagement
                 if reply.upvotes >= 5:
                     Notification.objects.create(
+                        title='High Engagement',
                         message=f"High engagement on reply: {reply.post.title[:50]}... ({reply.upvotes} upvotes)",
-                        notification_type='engagement',
-                        related_reply=reply
+                        notification_type='engagement_increase',
+                        post=reply.post
                     )
                 
                 updated_count += 1

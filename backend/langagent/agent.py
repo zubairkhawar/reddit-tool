@@ -40,6 +40,15 @@ class RedditLeadAgent:
             - Consider if they're asking for technical work, consulting, or development
             - Assess if they have a clear project description
             - Determine if they seem serious about hiring
+            - Consider subreddit rules (avoid platform links in replies)
+            
+            SKILL-SPECIFIC FILTERING:
+            - HIGH PRIORITY: AI automation, LangChain, LangGraph, RAG, PDF chat, voice agents, web development, Django, Next.js, React
+            - MEDIUM PRIORITY: Data analysis, business intelligence, analytics, reporting, API development
+            - LOW PRIORITY: General programming, basic automation
+            - REJECT: Voice recording, transcription, translation, manual data entry, non-technical tasks
+            
+            Only classify as opportunity if it matches your core skills (AI automation, web development, data analysis)
             """
             
             response = self.client.chat.completions.create(

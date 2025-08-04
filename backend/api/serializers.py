@@ -1,18 +1,39 @@
 from rest_framework import serializers
 from reddit.models import (
-    Keyword, Subreddit, RedditPost, Classification, Reply, 
+    Group, Keyword, Subreddit, RedditPost, Classification, Reply, 
     Notification, AIPersona, PerformanceMetrics, SystemConfig, Leaderboard
 )
 from langagent.models import AILearningData, AIPromptTemplate, AIPerformanceMetrics
 
 
+class GroupSerializer(serializers.ModelSerializer):
+    keywords_count = serializers.SerializerMethodField()
+    subreddits_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Group
+        fields = '__all__'
+    
+    def get_keywords_count(self, obj):
+        return obj.keywords.count()
+    
+    def get_subreddits_count(self, obj):
+        return obj.subreddits.count()
+
+
 class KeywordSerializer(serializers.ModelSerializer):
+    group = GroupSerializer(read_only=True)
+    group_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+    
     class Meta:
         model = Keyword
         fields = '__all__'
 
 
 class SubredditSerializer(serializers.ModelSerializer):
+    group = GroupSerializer(read_only=True)
+    group_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+    
     class Meta:
         model = Subreddit
         fields = '__all__'
@@ -131,3 +152,20 @@ class AIPerformanceMetricsSerializer(serializers.ModelSerializer):
     class Meta:
         model = AIPerformanceMetrics
         fields = '__all__' 
+
+
+class GroupWithDataSerializer(serializers.ModelSerializer):
+    keywords = serializers.SerializerMethodField()
+    subreddits = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Group
+        fields = '__all__'
+    
+    def get_keywords(self, obj):
+        keywords = obj.keywords.all()
+        return KeywordSerializer(keywords, many=True).data
+    
+    def get_subreddits(self, obj):
+        subreddits = obj.subreddits.all()
+        return SubredditSerializer(subreddits, many=True).data 

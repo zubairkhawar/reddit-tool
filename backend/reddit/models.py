@@ -3,9 +3,27 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 
 
+class Group(models.Model):
+    """Groups for organizing keywords and subreddits by category"""
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    color = models.CharField(max_length=20, default='blue')  # CSS color class
+    icon = models.CharField(max_length=50, default='target')  # Lucide icon name
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
 class Keyword(models.Model):
     """Keywords to monitor for in Reddit posts"""
     keyword = models.CharField(max_length=100, unique=True)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='keywords', null=True, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -20,6 +38,7 @@ class Keyword(models.Model):
 class Subreddit(models.Model):
     """Subreddits to monitor"""
     name = models.CharField(max_length=50, unique=True)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='subreddits', null=True, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

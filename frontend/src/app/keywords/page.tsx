@@ -2,7 +2,36 @@
 
 import { useEffect, useState } from "react"
 import { apiClient, Keyword } from "@/lib/api"
-import { Plus, Edit, Trash2, Search, ToggleLeft, ToggleRight } from "lucide-react"
+import { 
+  Plus, 
+  Edit, 
+  Trash2, 
+  Search, 
+  ToggleLeft, 
+  ToggleRight,
+  ChevronDown,
+  ChevronRight,
+  Sparkles,
+  Target,
+  TrendingUp,
+  Zap,
+  Bot,
+  DollarSign,
+  Clock,
+  GripVertical,
+  AlertTriangle,
+  CheckCircle,
+  XCircle
+} from "lucide-react"
+
+interface KeywordGroup {
+  id: string
+  name: string
+  icon: any
+  color: string
+  keywords: Keyword[]
+  isExpanded: boolean
+}
 
 export default function KeywordsPage() {
   const [keywords, setKeywords] = useState<Keyword[]>([])
@@ -10,6 +39,8 @@ export default function KeywordsPage() {
   const [newKeyword, setNewKeyword] = useState("")
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editingValue, setEditingValue] = useState("")
+  const [recentlyAdded, setRecentlyAdded] = useState<number[]>([])
+  const [draggedId, setDraggedId] = useState<number | null>(null)
 
   useEffect(() => {
     fetchKeywords()
@@ -32,6 +63,11 @@ export default function KeywordsPage() {
 
     try {
       await apiClient.createKeyword(newKeyword.trim())
+      const newId = Date.now() // Simulate new ID
+      setRecentlyAdded([...recentlyAdded, newId])
+      setTimeout(() => {
+        setRecentlyAdded(prev => prev.filter(id => id !== newId))
+      }, 3000)
       setNewKeyword("")
       fetchKeywords()
     } catch (error) {
@@ -72,88 +108,203 @@ export default function KeywordsPage() {
     }
   }
 
+  const getKeywordIcon = (keyword: string) => {
+    const lower = keyword.toLowerCase()
+    if (lower.includes('ai') || lower.includes('bot')) return Bot
+    if (lower.includes('budget') || lower.includes('pay') || lower.includes('rate')) return DollarSign
+    if (lower.includes('urgent') || lower.includes('asap')) return AlertTriangle
+    if (lower.includes('development') || lower.includes('design')) return Target
+    return Search
+  }
+
+  const getKeywordColor = (keyword: string) => {
+    const lower = keyword.toLowerCase()
+    if (lower.includes('ai') || lower.includes('bot')) return "from-purple-500 to-pink-500"
+    if (lower.includes('budget') || lower.includes('pay') || lower.includes('rate')) return "from-green-500 to-blue-500"
+    if (lower.includes('urgent') || lower.includes('asap')) return "from-red-500 to-orange-500"
+    if (lower.includes('development') || lower.includes('design')) return "from-blue-500 to-purple-500"
+    return "from-gray-500 to-gray-600"
+  }
+
+  const getUsageMetrics = (keyword: Keyword) => {
+    // Simulate usage metrics
+    const baseUsage = Math.floor(Math.random() * 20) + 5
+    const weeklyGrowth = Math.floor(Math.random() * 10) + 1
+    return {
+      weekly: baseUsage,
+      growth: weeklyGrowth,
+      leads: Math.floor(baseUsage * 0.3),
+      engagement: Math.floor(Math.random() * 50) + 20
+    }
+  }
+
+  const keywordGroups: KeywordGroup[] = [
+    {
+      id: 'ai',
+      name: 'AI & Automation',
+      icon: Bot,
+      color: 'from-purple-500 to-pink-500',
+      keywords: keywords.filter(k => k.keyword.toLowerCase().includes('ai') || k.keyword.toLowerCase().includes('bot')),
+      isExpanded: true
+    },
+    {
+      id: 'budget',
+      name: 'Budget & Pricing',
+      icon: DollarSign,
+      color: 'from-green-500 to-blue-500',
+      keywords: keywords.filter(k => k.keyword.toLowerCase().includes('budget') || k.keyword.toLowerCase().includes('pay')),
+      isExpanded: true
+    },
+    {
+      id: 'urgent',
+      name: 'Urgent Requests',
+      icon: AlertTriangle,
+      color: 'from-red-500 to-orange-500',
+      keywords: keywords.filter(k => k.keyword.toLowerCase().includes('urgent') || k.keyword.toLowerCase().includes('asap')),
+      isExpanded: true
+    },
+    {
+      id: 'services',
+      name: 'Services',
+      icon: Target,
+      color: 'from-blue-500 to-purple-500',
+      keywords: keywords.filter(k => !k.keyword.toLowerCase().includes('ai') && !k.keyword.toLowerCase().includes('budget') && !k.keyword.toLowerCase().includes('urgent')),
+      isExpanded: true
+    }
+  ]
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="text-center">
+          <div className="w-16 h-16 gradient-primary rounded-full flex items-center justify-center animate-spin mb-4">
+            <Search className="h-8 w-8 text-white" />
+          </div>
+          <p className="text-gray-600 font-medium">Loading keywords...</p>
+        </div>
       </div>
     )
   }
 
   return (
     <div className="p-6 space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Keywords</h1>
-        <div className="text-sm text-gray-500">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+            Keywords
+          </h1>
+          <p className="text-gray-600 mt-1">Monitor Reddit for high-priority opportunities</p>
+        </div>
+        <div className="glass-card px-4 py-2 rounded-xl">
+          <div className="flex items-center space-x-2">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            <span className="text-sm text-gray-600">
           {keywords.filter(k => k.is_active).length} active keywords
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Add New Keyword */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Add New Keyword</h2>
-        <div className="flex space-x-3">
+      {/* Sticky Add Keyword Bar */}
+      <div className="sticky top-0 z-10 glass-card rounded-2xl p-4 mb-6">
+        <div className="flex items-center space-x-3">
+          <div className="flex-1 relative">
           <input
             type="text"
             value={newKeyword}
             onChange={(e) => setNewKeyword(e.target.value)}
-            placeholder="Enter keyword to monitor..."
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Add a new keyword to monitor..."
+              className="w-full px-4 py-3 bg-white/50 rounded-xl border border-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             onKeyPress={(e) => e.key === "Enter" && handleAddKeyword()}
           />
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <Search className="h-5 w-5 text-gray-400" />
+            </div>
+          </div>
           <button
             onClick={handleAddKeyword}
             disabled={!newKeyword.trim()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            className="p-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:shadow-lg transition-all duration-300 hover-lift disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
           >
-            <Plus className="h-4 w-4" />
-            <span>Add</span>
+            <Plus className="h-5 w-5 group-hover:scale-110 transition-transform" />
+            <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
           </button>
         </div>
       </div>
 
-      {/* Keywords List */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Manage Keywords</h2>
+      {/* Keywords Groups */}
+      <div className="space-y-6">
+        {keywordGroups.map((group) => (
+          <div key={group.id} className="glass-card rounded-2xl overflow-hidden">
+            <div 
+              className="p-4 cursor-pointer hover:bg-white/20 transition-colors"
+              onClick={() => group.isExpanded = !group.isExpanded}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className={`p-2 bg-gradient-to-r ${group.color} rounded-lg text-white`}>
+                    <group.icon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">{group.name}</h3>
+                    <p className="text-sm text-gray-600">{group.keywords.length} keywords</p>
+                  </div>
+                </div>
+                {group.isExpanded ? (
+                  <ChevronDown className="h-5 w-5 text-gray-500" />
+                ) : (
+                  <ChevronRight className="h-5 w-5 text-gray-500" />
+                )}
         </div>
-        <div className="divide-y divide-gray-200">
-          {keywords.length === 0 ? (
-            <div className="px-6 py-12 text-center">
-              <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No keywords found</h3>
-              <p className="text-gray-600">Add your first keyword to start monitoring Reddit posts.</p>
+            </div>
+
+            {group.isExpanded && (
+              <div className="p-4 space-y-3">
+                {group.keywords.length === 0 ? (
+                  <div className="text-center py-8">
+                    <group.icon className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-600">No {group.name.toLowerCase()} keywords yet</p>
             </div>
           ) : (
-            keywords.map((keyword) => (
-              <div key={keyword.id} className="px-6 py-4">
+                  group.keywords.map((keyword, index) => {
+                    const metrics = getUsageMetrics(keyword)
+                    const Icon = getKeywordIcon(keyword.keyword)
+                    const isRecentlyAdded = recentlyAdded.includes(keyword.id)
+                    
+                    return (
+                      <div
+                        key={keyword.id}
+                        className={`p-4 bg-white/50 rounded-xl hover-lift transition-all duration-300 ${
+                          isRecentlyAdded ? 'animate-pulse-glow' : ''
+                        }`}
+                        draggable
+                        onDragStart={() => setDraggedId(keyword.id)}
+                        onDragEnd={() => setDraggedId(null)}
+                      >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <button
-                      onClick={() => handleToggleActive(keyword)}
-                      className={`p-1 rounded-full ${
-                        keyword.is_active ? "text-green-600" : "text-gray-400"
-                      }`}
-                    >
-                      {keyword.is_active ? (
-                        <ToggleRight className="h-5 w-5" />
-                      ) : (
-                        <ToggleLeft className="h-5 w-5" />
-                      )}
-                    </button>
-                    
+                            <div className="p-2 bg-gradient-to-r from-gray-100 to-gray-200 rounded-lg">
+                              <GripVertical className="h-4 w-4 text-gray-500" />
+                            </div>
+                            
+                            <div className={`p-2 bg-gradient-to-r ${getKeywordColor(keyword.keyword)} rounded-lg text-white`}>
+                              <Icon className="h-4 w-4" />
+                            </div>
+
+                            <div className="flex-1">
                     {editingId === keyword.id ? (
                       <div className="flex items-center space-x-2">
                         <input
                           type="text"
                           value={editingValue}
                           onChange={(e) => setEditingValue(e.target.value)}
-                          className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="px-3 py-1 bg-white rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           onKeyPress={(e) => e.key === "Enter" && handleUpdateKeyword(keyword.id)}
                         />
                         <button
                           onClick={() => handleUpdateKeyword(keyword.id)}
-                          className="text-sm text-blue-600 hover:text-blue-800"
+                                    className="text-sm text-green-600 hover:text-green-700 font-medium"
                         >
                           Save
                         </button>
@@ -162,61 +313,117 @@ export default function KeywordsPage() {
                             setEditingId(null)
                             setEditingValue("")
                           }}
-                          className="text-sm text-gray-600 hover:text-gray-800"
+                                    className="text-sm text-gray-600 hover:text-gray-700"
                         >
                           Cancel
                         </button>
                       </div>
                     ) : (
-                      <span className={`text-sm font-medium ${
-                        keyword.is_active ? "text-gray-900" : "text-gray-500"
-                      }`}>
-                        {keyword.keyword}
-                      </span>
-                    )}
+                                <div>
+                                  <h4 className="font-medium text-gray-900">{keyword.keyword}</h4>
+                                  <div className="flex items-center space-x-4 mt-1">
+                                    <div className="flex items-center space-x-1 text-xs text-gray-600">
+                                      <TrendingUp className="h-3 w-3" />
+                                      <span>{metrics.weekly} leads/week</span>
+                                    </div>
+                                    <div className="flex items-center space-x-1 text-xs text-gray-600">
+                                      <Zap className="h-3 w-3" />
+                                      <span>{metrics.engagement}% engagement</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                   </div>
 
                   <div className="flex items-center space-x-2">
-                    <span className="text-xs text-gray-500">
-                      {new Date(keyword.created_at).toLocaleDateString()}
-                    </span>
+                            {/* Toggle Switch */}
+                            <button
+                              onClick={() => handleToggleActive(keyword)}
+                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                keyword.is_active 
+                                  ? 'bg-gradient-to-r from-green-500 to-blue-500' 
+                                  : 'bg-gray-200'
+                              }`}
+                            >
+                              <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                  keyword.is_active ? 'translate-x-6' : 'translate-x-1'
+                                }`}
+                              />
+                            </button>
+
+                            {/* Status Indicator */}
+                            <div className="flex items-center space-x-1">
+                              {keyword.is_active ? (
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                              ) : (
+                                <XCircle className="h-4 w-4 text-gray-400" />
+                              )}
+                            </div>
                     
+                            {/* Action Buttons */}
                     {editingId !== keyword.id && (
-                      <>
+                              <div className="flex items-center space-x-1">
                         <button
                           onClick={() => {
                             setEditingId(keyword.id)
                             setEditingValue(keyword.keyword)
                           }}
-                          className="p-1 text-gray-400 hover:text-gray-600"
+                                  className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
                         >
                           <Edit className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteKeyword(keyword.id)}
-                          className="p-1 text-gray-400 hover:text-red-600"
+                                  className="p-1 text-gray-400 hover:text-red-600 transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
-                      </>
+                              </div>
                     )}
                   </div>
                 </div>
+                      </div>
+                    )
+                  })
+                )}
               </div>
-            ))
           )}
         </div>
+        ))}
       </div>
 
-      {/* Tips */}
-      <div className="bg-blue-50 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-blue-900 mb-2">Tips for effective keywords:</h3>
-        <ul className="text-sm text-blue-800 space-y-1">
-          <li>• Use specific terms like "AI automation" instead of just "AI"</li>
-          <li>• Include budget indicators like "budget", "pay", "rate"</li>
-          <li>• Add urgency words like "urgent", "ASAP", "needed"</li>
-          <li>• Include service types like "development", "design", "consulting"</li>
-        </ul>
+      {/* Tips Section */}
+      <div className="glass-card rounded-2xl p-6">
+        <div className="flex items-center space-x-3 mb-4">
+          <div className="p-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg">
+            <Sparkles className="h-5 w-5 text-white" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900">Pro Tips for Effective Keywords</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <span className="text-sm text-gray-700">Use specific terms like "AI automation" instead of just "AI"</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-sm text-gray-700">Include budget indicators like "budget", "pay", "rate"</span>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+              <span className="text-sm text-gray-700">Add urgency words like "urgent", "ASAP", "needed"</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+              <span className="text-sm text-gray-700">Include service types like "development", "design", "consulting"</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

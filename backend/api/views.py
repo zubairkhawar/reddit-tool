@@ -5,32 +5,78 @@ from django.db.models import Count, Q, Avg
 from django.utils import timezone
 from datetime import timedelta
 from reddit.models import (
-    Keyword, Subreddit, RedditPost, Classification, Reply, 
+    Group, Keyword, Subreddit, RedditPost, Classification, Reply, 
     Notification, AIPersona, PerformanceMetrics, SystemConfig, Leaderboard
 )
 from langagent.models import AILearningData, AIPromptTemplate, AIPerformanceMetrics
 from .serializers import (
-    KeywordSerializer, SubredditSerializer, RedditPostSerializer,
-    ClassificationSerializer, ReplySerializer, NotificationSerializer,
-    AIPersonaSerializer, PerformanceMetricsSerializer,
-    DashboardStatsSerializer, LeadSummarySerializer, SystemConfigSerializer,
-    LeaderboardSerializer, AILearningDataSerializer, AIPromptTemplateSerializer,
+    KeywordSerializer, 
+    SubredditSerializer, 
+    GroupSerializer, 
+    GroupWithDataSerializer,
+    RedditPostSerializer, 
+    ClassificationSerializer, 
+    ReplySerializer,
+    NotificationSerializer,
+    AIPersonaSerializer,
+    PerformanceMetricsSerializer,
+    DashboardStatsSerializer,
+    LeadSummarySerializer,
+    SystemConfigSerializer,
+    LeaderboardSerializer,
+    AILearningDataSerializer,
+    AIPromptTemplateSerializer,
     AIPerformanceMetricsSerializer
 )
 from django.shortcuts import get_object_or_404
 from reddit.poster import RedditPoster
+from reddit.fetcher import RedditFetcher
+from langagent.agent import RedditLeadAgent
+import subprocess
+import os
+
+
+class GroupViewSet(viewsets.ModelViewSet):
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializer
+    permission_classes = [permissions.AllowAny]
+
+    @action(detail=False, methods=['get'])
+    def with_data(self, request):
+        """Get all groups with their keywords and subreddits in a single optimized query"""
+        try:
+            # Use prefetch_related to optimize database queries
+            groups = Group.objects.prefetch_related('keywords', 'subreddits').all()
+            serializer = GroupWithDataSerializer(groups, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class KeywordViewSet(viewsets.ModelViewSet):
     queryset = Keyword.objects.all()
     serializer_class = KeywordSerializer
     permission_classes = [permissions.AllowAny]
+    
+    def get_queryset(self):
+        queryset = Keyword.objects.all()
+        group_id = self.request.query_params.get('group_id')
+        if group_id:
+            queryset = queryset.filter(group_id=group_id)
+        return queryset
 
 
 class SubredditViewSet(viewsets.ModelViewSet):
     queryset = Subreddit.objects.all()
     serializer_class = SubredditSerializer
     permission_classes = [permissions.AllowAny]
+    
+    def get_queryset(self):
+        queryset = Subreddit.objects.all()
+        group_id = self.request.query_params.get('group_id')
+        if group_id:
+            queryset = queryset.filter(group_id=group_id)
+        return queryset
 
 
 class RedditPostViewSet(viewsets.ReadOnlyModelViewSet):
@@ -373,6 +419,77 @@ class DashboardViewSet(viewsets.ViewSet):
             lead_summaries.append(lead_summary)
         
         return Response(lead_summaries)
+
+    @action(detail=False, methods=['post'])
+    def run_test(self, request):
+        """Run the Reddit fetcher test"""
+        try:
+            # Get group_id from request
+            group_id = request.data.get('group_id')
+            
+            # Initialize fetcher and run test
+            fetcher = RedditFetcher()
+            saved_posts = fetcher.fetch_and_save(hours_back=96, group_id=group_id)  # 4 days
+            
+            # Process posts with AI agent
+            agent = RedditLeadAgent()
+            processed_count = agent.process_unclassified_posts()
+            
+            # Get group info if specified
+            group_info = None
+            if group_id:
+                try:
+                    group = Group.objects.get(id=group_id)
+                    group_info = {
+                        'id': group.id,
+                        'name': group.name,
+                        'keywords_count': group.keywords.count(),
+                        'subreddits_count': group.subreddits.count()
+                    }
+                except Group.DoesNotExist:
+                    pass
+            
+            return Response({
+                'success': True,
+                'message': f'Test completed successfully',
+                'posts_saved': len(saved_posts),
+                'posts_processed': processed_count,
+                'opportunities_found': Classification.objects.filter(is_opportunity=True).count(),
+                'group': group_info
+            })
+            
+        except Exception as e:
+            return Response({
+                'success': False,
+                'message': f'Test failed: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['post'])
+    def clear_posts(self, request):
+        """Clear all scraped posts"""
+        try:
+            # Clear all posts and related data
+            posts_deleted = RedditPost.objects.count()
+            classifications_deleted = Classification.objects.count()
+            replies_deleted = Reply.objects.count()
+            
+            RedditPost.objects.all().delete()
+            Classification.objects.all().delete()
+            Reply.objects.all().delete()
+            
+            return Response({
+                'success': True,
+                'message': 'All posts cleared successfully',
+                'posts_deleted': posts_deleted,
+                'classifications_deleted': classifications_deleted,
+                'replies_deleted': replies_deleted
+            })
+            
+        except Exception as e:
+            return Response({
+                'success': False,
+                'message': f'Failed to clear posts: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class SystemConfigViewSet(viewsets.ModelViewSet):

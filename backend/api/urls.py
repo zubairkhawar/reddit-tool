@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    KeywordViewSet, SubredditViewSet, RedditPostViewSet,
+    GroupViewSet, KeywordViewSet, SubredditViewSet, RedditPostViewSet,
     ClassificationViewSet, ReplyViewSet, NotificationViewSet,
     AIPersonaViewSet, PerformanceMetricsViewSet, DashboardViewSet,
     SystemConfigViewSet, LeaderboardViewSet, AILearningDataViewSet,
@@ -9,6 +9,7 @@ from .views import (
 )
 
 router = DefaultRouter()
+router.register(r'groups', GroupViewSet)
 router.register(r'keywords', KeywordViewSet)
 router.register(r'subreddits', SubredditViewSet)
 router.register(r'posts', RedditPostViewSet)

@@ -37,9 +37,10 @@ def test_reddit_fetcher():
         
         # Test fetching and saving posts
         print(f"\n📡 Testing Reddit fetch and save...")
+        print("⏱️ This will take a few minutes due to rate limiting...")
         
         # Fetch and save posts
-        saved_posts = fetcher.fetch_and_save(hours_back=24)
+        saved_posts = fetcher.fetch_and_save(hours_back=96)  # Changed to 4 days
         
         if saved_posts:
             print(f"✅ Successfully fetched and saved {len(saved_posts)} posts")
@@ -74,6 +75,43 @@ def test_reddit_fetcher():
     except Exception as e:
         print(f"\n❌ Test failed: {str(e)}")
         return False
+
+def test_focused_fetch():
+    """Test fetching from high-priority subreddits only"""
+    try:
+        print("🎯 Testing Focused Fetch (High-Priority Subreddits)...")
+        
+        # Focus on subreddits most likely to have leads
+        priority_subreddits = ['forhire', 'FreelanceProgramming', 'startups', 'entrepreneur']
+        
+        fetcher = RedditFetcher()
+        fetched_posts = []
+        
+        for subreddit_name in priority_subreddits:
+            try:
+                print(f"📡 Fetching from r/{subreddit_name}...")
+                subreddit = fetcher.reddit.subreddit(subreddit_name)
+                
+                # Fetch recent posts
+                for submission in subreddit.new(limit=50):
+                    if fetcher._contains_keywords(submission.title + " " + submission.selftext):
+                        post_data = fetcher._extract_post_data(submission)
+                        fetched_posts.append(post_data)
+                        print(f"   ✅ Found potential lead: {submission.title[:60]}...")
+                
+                # Rate limiting
+                import time
+                time.sleep(2)
+                
+            except Exception as e:
+                print(f"   ❌ Error with r/{subreddit_name}: {e}")
+        
+        print(f"\n🎯 Focused fetch found {len(fetched_posts)} potential leads!")
+        return fetched_posts
+        
+    except Exception as e:
+        print(f"❌ Focused fetch failed: {e}")
+        return []
 
 def show_current_data():
     """Show current data in the system"""
@@ -111,12 +149,27 @@ if __name__ == "__main__":
     # Show current data
     show_current_data()
     
-    # Test the system
-    success = test_reddit_fetcher()
+    # Ask user which test to run
+    print("\n🔍 Choose test type:")
+    print("1. Full test (all subreddits - slower)")
+    print("2. Focused test (high-priority subreddits - faster)")
     
-    if success:
-        print("\n🎉 All tests PASSED! Your RedditLead.AI is ready to use.")
-        sys.exit(0)
+    choice = input("\nEnter choice (1 or 2): ").strip()
+    
+    if choice == "2":
+        # Run focused test
+        leads = test_focused_fetch()
+        if leads:
+            print(f"\n🎯 Found {len(leads)} potential leads!")
+            for lead in leads[:3]:
+                print(f"  - {lead['title'][:60]}... (r/{lead['subreddit'].name})")
     else:
-        print("\n❌ Some tests failed. Check the output above.")
-        sys.exit(1) 
+        # Run full test
+        success = test_reddit_fetcher()
+        
+        if success:
+            print("\n🎉 All tests PASSED! Your RedditLead.AI is ready to use.")
+            sys.exit(0)
+        else:
+            print("\n❌ Some tests failed. Check the output above.")
+            sys.exit(1) 
